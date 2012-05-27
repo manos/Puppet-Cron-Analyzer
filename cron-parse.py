@@ -32,10 +32,8 @@ parser.add_option("-g", "--generate", default=None, help="run puppet master --co
 (options, args) = parser.parse_args()
 
 # set up logging
-if options.debug:
-    log_level = logging.DEBUG
-else:
-    log_level = logging.INFO
+if options.debug: log_level = logging.DEBUG
+else:             log_level = logging.INFO
 
 # c'mon. don't send everything to stderr, sheesh python.
 logging.basicConfig(stream=sys.stdout, level=log_level)
