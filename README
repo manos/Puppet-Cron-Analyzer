@@ -6,7 +6,7 @@ Puppet Cron Analyzer
 
 Purpose:
 Analyze crons across an infrastructure, and visualize scheduled run times to identify
-duplicates, or hot spots.Also, identifies duplicate crons.
+clashes or hot spots. Also, identifies duplicate crons.
 
 Basically, I've found that puppet-managed cron jobs tend to grow and grow... especially
 when developers (not ops) are creating them.
