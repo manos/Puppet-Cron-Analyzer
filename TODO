@@ -1,0 +1,4 @@
+cron-parse should by default, read all files in catalogs/ and output files in output/.
+
+cron-analyze should output reports per-host, but also summarize everything across the infrastructure...
+
