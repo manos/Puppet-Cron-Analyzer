@@ -40,6 +40,8 @@ print cronlib.normalize_entry(cron)
 '''
 
 import collections
+import datetime
+import time
 
 symbolic_names = {
     '@yearly':        '0 0 1 1 *',
@@ -126,11 +128,11 @@ def _exp_step (item, unit):
     if item[0] is '*':
         # '*/2' means every 2 mins (for minute field)
 
-        _step = item.split('/')[1]
+        step = item.split('/')[1]
         start = all_values[unit][:1][0]
         end   = all_values[unit][-1:][0]
 
-        return range(int(start), int(end)+1, int(_step))
+        return range(int(start), int(end)+1, int(step))
 
     elif '-' in item:
         # '0-8/2' means [0, 2, 4, 6, 8]
@@ -308,8 +310,36 @@ def expand_weekday (day):
 def expand_timestamps (normalized_cron_entry):
     ''' returns a generator object, containing a list of all timestamps a cron
         will run at, for the next year '''
-    #TODO
-    pass
+
+    # input: ('0', '0', '1', '1,2,3,4,5,6,7,8,9,10,11,12', '0,1,2,3,4,5,6', 'monthly command.....')
+    #        ('0,10,20,30,40,50,60', '0', '0', '0', '1,2', 'command...')
+    # ('0', '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23',
+    #  '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',
+    #  '1,2,3,4,5,6,7,8,9,10,11,12', '0,1,2,3,4,5,6', 'command')
+
+    minutes, hours, monthdays, months, weekdays, command = normalized_cron_entry
+
+    result = []
+    dt  = datetime.datetime.now()
+    end = dt + datetime.timedelta(days=365)
+
+    step  = datetime.timedelta(minutes=1)
+
+    while dt < end:
+        if ( str(dt.minute) in minutes
+             and str(dt.hour) in hours
+             and str(dt.weekday()) in weekdays
+             and str(dt.month) in months
+             and str(dt.day) in monthdays
+             ):
+            #result.append(dt.strftime('%Y-%m-%d %H:%M:%S'))
+            #result.append(dt.strftime('%u'))
+            result.append(time.mktime(dt.timetuple()))
+        dt += step
+
+    print len(result)
+
+
 
 def normalize_entry (cron_entry):
     ''' Returns a full cron entry as a 6-tuple, but normalized into lists of integers
