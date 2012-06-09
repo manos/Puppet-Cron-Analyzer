@@ -8,8 +8,8 @@ Purpose:
 Analyze crons across an infrastructure, and visualize scheduled run times to identify
 clashes or hot spots. Also, identifies duplicate crons.
 
-Basically, I've found that puppet-managed cron jobs tend to grow and grow... especially
-when developers (not ops) are creating them.
+Basically, I've found that puppet-managed cron jobs tend to grow and grow...
+especially when developers (in addition to ops) are creating them :)
 
 Questions I needed answered:
 Are all nightly or hourly map/reduce jobs running at the same time?
@@ -20,4 +20,9 @@ Where can I better schedule some of these clashes?!
 The first iteration of this script parses out all puppet-managed cron jobs, and
 prints an analysis of cron clashes and duplicates. Next, we'll find a way to
 visualize crons per-host, per-cluster, and across the infrastructue.
+
+Bonus:
+This required the implementation of cronlib, which normalizes cron entries into
+strictly lists of integers. It can also return a list of all timestamps in the
+next year a cron will run at.
 
