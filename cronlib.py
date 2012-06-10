@@ -303,7 +303,8 @@ def expand_weekday (day):
 
 def expand_timestamps (normalized_cron_entry):
     ''' returns a list containing all timestamps a cron will run at, for the current year '''
-    if not isinstance(normalized_cron_entry, collections.Iterable):
+
+    if normalized_cron_entry is None:
         return []
 
     minutes, hours, monthdays, months, weekdays, command = normalized_cron_entry
