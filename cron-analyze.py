@@ -81,7 +81,7 @@ if __name__ == '__main__':
     if len(args) > 1:
         parser.error("only one argument allowed: file to read from")
 
-    ''' First, find the cron json list  - stdin or a file '''
+    ''' First, find the cron json list  - stdin, a file arg, or dirlist() '''
     stdin = None
     if not sys.stdin.isatty(): # redirected from file or pipe
         stdin = sys.stdin.read()
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     elif len(args) == 1:
         for cron in open(args[0], "r").readlines():
             crons += json.loads(cron)
-        catalogs.update({'single':crons})
+        catalogs.update({os.path.basename(args[0]):crons})
     else:
         for catalog in os.listdir(indir):
             crons = []
@@ -103,12 +103,13 @@ if __name__ == '__main__':
             catalogs.update({catalog:crons})
         sys.exit(0)
 
-    ''' Next, for every catalog/blob, convert to dict {cron_line:[timestamps]}'''
+    ''' Next, for every catalog/blob, convert to dicts for processing: '''
 
     for filename,crons in catalogs.iteritems():
-        # create a list crons that actually run (i.e. skips ensure=>absent)
 
+        # create a list crons that actually run (i.e. skips ensure=>absent)
         live_crons = []
+
         for cron in crons:
             if 'ensure' in cron['parameters'] and cron['parameters']['ensure'] == 'absent':
                continue
@@ -118,37 +119,45 @@ if __name__ == '__main__':
 
         #
         # Using cronlib, we'll genreate a list of timestamps all crons will run at..
-        # Don't store these in memory! Writes to a file for each host... stored as json,
+        # Stores every non-duplicate cron time('0 * * * *') list of timestamps in time_map.
         # where the key is the cron entry (normalized as a tuple), and the value is a list of timestamps.
+        # Dumps to pickle files, for subsequent runs where --existing-data may be used.
         #
+
         output = {}
+        # output: {"hostname": {"(0, 0, 1, 1, 0, 'command')": PUPPET_JSON, "(0,...)": PUPPET_JSON, ... }
+        time_map = {}
+        # time_map: {"(0, 0, 1, 1, 0)": [98742323423.0, 29482039423.0, ... ]}
+
         for cron in live_crons:
             _cron = cronify(cron)
 
             if _cron is None:
                 continue
 
-            norm_cron  = cronlib.normalize_entry(_cron)
-            if norm_cron:
+            norm_cron = cronlib.normalize_entry(_cron)
+
+            if norm_cron and norm_cron[:5] not in time_map:
                 timestamps = cronlib.expand_timestamps(norm_cron)
+                time_map.update({norm_cron[:5]:timestamps})
+
+            if filename in output and norm_cron in output[filename]:
+                logging.warn("Found duplicate cron job on host %s. Skipping: %s", (filename,_cron))
+
+            if not filename in output:
+                output.update({filename:{norm_cron:cron}})
             else:
-                continue
-
-            output.update({norm_cron:timestamps})
-
-            # TODO: insert into redis for live analysis?
+                output[filename].update({norm_cron:cron})
 
         # Write to file:
         if stdin:
-            print output
+            print output, time_map
         elif len(args) == 1:
-            FILE = open(outdir + os.path.basename(args[0]), 'w')
-            pickle.dump(output, FILE)
-            FILE.close()
+            pickle.dump(output, open(outdir + filename, 'w'))
+            pickle.dump(time_map, open(outdir + "time_map.pickle", 'w'))
         else:
-            FILE = open(outdir + filename, 'w')
-            pickle.dump(output, FILE)
-            FILE.close()
+            pickle.dump(output, open(outdir + filename, 'w'))
+            pickle.dump(time_map, open(outdir + "time_map.pickle", 'w'))
 
 
     ''' Next, analyze. Read all files (consuming lots of memory potentially), unless --bds
@@ -158,8 +167,9 @@ if __name__ == '__main__':
         all_data = {}
         indir = outdir
         for host in os.listdir(indir):
-            data = pickle.load(open(indir + host, 'r'))
-            all_data.update({host:data})
+            if host != 'time_map.pickle':
+                data = pickle.load(open(indir + host, 'r'))
+                all_data.update(data)
 
         print all_data
 
