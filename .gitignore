@@ -1,3 +1,4 @@
 catalogs/
-output/
+parse-output/
+analyze-output/
 *.pyc

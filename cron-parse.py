@@ -10,7 +10,7 @@
 #
 # usage: cron-parse.py [--console]
 #
-# With no command line options, this will parse all crons in ./catalogs/ and output to ./output/.
+# With no command line options, this will parse all crons in ./catalogs/ and output to ./parse-output/.
 # If stdin is provided, it will output the result to stdout.
 #
 # If --generate is used, we will attempt to ask puppet to compile all catalogs (via puppet.py).
@@ -61,8 +61,10 @@ def do_parse_and_write(catalogs_dir, outdir):
     return True
 
 if __name__ == '__main__':
-    outdir = './output/'
+    outdir = './parse-output/'
     input_dir = './catalogs/'
+
+    if not os.path.exists(outdir): os.makedirs(outdir)
 
     stdin = None
     if not sys.stdin.isatty(): # redirected from file or pipe
