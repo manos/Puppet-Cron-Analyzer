@@ -20,6 +20,7 @@
 #   - regex searching all crons (displays cron lines per host, and summarizes which hosts it exists on)
 #
 # Future: Options for displaying {day,week}-at-a-time views of all crons that will run.
+# Future: for a given pair of crons (regex?), find out if they ever run at the same time.
 #
 '''
 usage: cron-analyze.py [options] [stdin] [input file]
@@ -27,7 +28,7 @@ usage: cron-analyze.py [options] [stdin] [input file]
 options:
   -h, --help            show this help message and exit
   --debug=DEBUG         enable debug output
-  --output=OUTPUT       Default: stdout text-based summary. Options: [ics]
+  --output=OUTPUT       Default: stdout text-based summary. Options: [ical]
   -e, --existing-data   skip the parse step, use existing data in ./analyze-
                         output/
   -f regex, --find=regex
@@ -46,8 +47,8 @@ import cronlib
 import cPickle as pickle
 
 parser = OptionParser("usage: %prog [options] [stdin] [input file]")
-parser.add_option("--debug", default=None, help="enable debug output")
-parser.add_option("--output", default=None, help="Default: stdout text-based summary. Options: [ics]")
+parser.add_option("-d", "--debug", default=None, help="enable debug output")
+parser.add_option("-i", "--output", default=None, help="Default: stdout text-based summary. Options: [ical]")
 parser.add_option("-e", "--existing-data", default=None, action="store_true",
         help="skip the parse step, use existing data in ./analyze-output/")
 parser.add_option("-f", "--find", default=None, metavar="regex",
@@ -99,14 +100,14 @@ def cronify(cron):
 
     return line
 
-def find_cron(crons, regex):
+def find_cron(all_crons, regex):
     ''' finds crons across all hosts by searching regex '''
 
     found_hosts = []
     found_sum   = 0
-    for host in crons.iteritems():
+    for host in all_crons.iteritems():
 
-        found_crons = [v for k,v in host[1].iteritems() if re.match(regex, k[5]) ] # if regex in k[6]
+        found_crons = [v for k,v in host[1].iteritems() if re.match(regex, k[5]) ]
 
         if len(found_crons) == 0: continue
         found_sum += len(found_crons)
@@ -124,14 +125,24 @@ def find_cron(crons, regex):
     return
 
 
-def find_dups_allhosts(crons, time_map):
-    ''' the exact same cron running on various hosts. returns dict {(host1, host2,): cron} '''
+def find_dups_allhosts(all_crons, time_map):
+    ''' the exact same cron running on various hosts (at the same times). returns dict {(host1, host2,): cron} '''
     pass
 
-
-def find_sametime_crons(crons, time_map):
-    ''' crons that run at the same time on a host. returns list of full (puppet) crons. '''
+def find_samestime_crons(crons, time_map):
+    ''' any crons that *ever* run at the same time on a host. returns list of full (puppet) crons. '''
     pass
+
+def find_sameschedule_crons(crons, time_map):
+    ''' crons that run at the same schedule on a host. returns list of full (puppet) crons. '''
+
+    # doesn't work, sees itself:
+    print [k for k,v in crons.iteritems() if k[:5] in [k[:5] for k,v in crons.iteritems()] ]
+
+    for cron in crons.iteritems():
+        pass
+    #output = map(list, [k for k in crons])
+    #print [k[:5] for k in output]
 
 if __name__ == '__main__':
 
@@ -238,15 +249,26 @@ if __name__ == '__main__':
                 all_data.update(data)
         time_map = pickle.load(open(indir + "time_map.pickle", 'r'))
 
-    #print all_data, len(time_map)
+    ''' jobs that just run, and terminate '''
 
     # if we're just searching all crons, do it and exit:
     if options.find:
         find_cron(all_data, options.find)
         sys.exit(0)
 
+    # if we're outting a data format, do it and exit:
+    if options.output and options.output is 'ical':
+        pass
 
+    ''' full analysis '''
 
+    # find any crons that run on the exact same schedule on a host:
+    for host in all_data.iteritems():
+        find_sameschedule_crons(host[1])
+
+    # find any crons that ever run at the same time, on the same host:
+    for host in all_data.iteritems():
+        find_sametime_crons(host[1])
 
 
 #    hourly = [r for r in live_crons
@@ -254,10 +276,6 @@ if __name__ == '__main__':
 #
 #    print hourly
 #
-
-    # list of crons running at same hour / minute?
-
-    # summarize crons that run at the same hour (warning), and minute (alert!)
 
 
 
