@@ -18,11 +18,12 @@ import logging
 import simplejson as json
 from optparse import OptionParser
 import cronlib
+import cPickle as pickle
 
 parser = OptionParser("usage: %prog [options] [input file]")
 parser.add_option("--debug", default=None, help="enable debug output")
 parser.add_option("--console", default=None, help="enable stdout text-based summary")
-parser.add_option("--dest", default=None, help=".pickle file to write out results")
+parser.add_option("--bds", default=None, help="type of 'big data store' to use: [redis|cassandra]")
 (options, args) = parser.parse_args()
 
 # set up logging
@@ -118,7 +119,7 @@ if __name__ == '__main__':
         #
         # Using cronlib, we'll genreate a list of timestamps all crons will run at..
         # Don't store these in memory! Writes to a file for each host... stored as json,
-        # where the key is the entire cron entry (normalized as a tuple), and the value is a list of crons.
+        # where the key is the cron entry (normalized as a tuple), and the value is a list of timestamps.
         #
         output = {}
         for cron in live_crons:
@@ -137,21 +138,31 @@ if __name__ == '__main__':
 
             # TODO: insert into redis for live analysis?
 
-            # Write to file:
-            if stdin:
-                print output
-            elif len(args) == 1:
-                FILE = open(outdir + os.path.basename(args[0]), 'w')
-                print >>FILE, json.dumps(str(output))
-                FILE.close()
-            else:
-                FILE = open(outdir + filename, 'w')
-                print >>FILE, json.dumps(output)
-                FILE.close()
+        # Write to file:
+        if stdin:
+            print output
+        elif len(args) == 1:
+            FILE = open(outdir + os.path.basename(args[0]), 'w')
+            pickle.dump(output, FILE)
+            FILE.close()
+        else:
+            FILE = open(outdir + filename, 'w')
+            pickle.dump(output, FILE)
+            FILE.close()
 
 
     ''' Next, analyze. Read all files (consuming lots of memory potentially), unless --bds
         was used. Then, connect to redis or cassandra, where we've already shoved this data '''
+
+    if not options.bds:
+        all_data = {}
+        indir = outdir
+        for host in os.listdir(indir):
+            data = pickle.load(open(indir + host, 'r'))
+            all_data.update({host:data})
+
+        print all_data
+
 
 #    hourly = [r for r in live_crons
 #            if r['parameters']['hour'] == '*']
