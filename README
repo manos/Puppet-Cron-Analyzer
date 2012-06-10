@@ -1,4 +1,15 @@
-/!\ This is a work in process, and it doesn't work yet /!\
+/!\ This is a work in process:
+
+    What works:
+        Parsing/storage of puppet catalogs / crons.
+        Regex search of all crons.
+
+    TODO:
+        Analysis of cron clashes, etc.
+        Output to ics (iCal).
+        Graphical output per day/week.
+
+/!\
 
 Puppet Cron Analyzer
 
@@ -6,7 +17,8 @@ Puppet Cron Analyzer
 
 Purpose:
 Analyze crons across an infrastructure, and visualize scheduled run times to identify
-clashes or hot spots. Also, identifies duplicate crons.
+clashes or hot spots. Also, identifies duplicate crons and allows searching across
+all crons in puppet.
 
 Basically, I've found that puppet-managed cron jobs tend to grow and grow...
 especially when developers (in addition to ops) are creating them :)
@@ -16,13 +28,11 @@ Are all nightly or hourly map/reduce jobs running at the same time?
 Are all backups running at the same time?
 Are all multiple jobs that hit mysql or cassandra heavily, running at the same time?
 Where can I better schedule some of these clashes?!
+Where are we running crons with the string 'foobar'?
 
-The first iteration of this script parses out all puppet-managed cron jobs, and
-prints an analysis of cron clashes and duplicates. Next, we'll find a way to
-visualize crons per-host, per-cluster, and across the infrastructue.
 
 Bonus:
 This required the implementation of cronlib, which normalizes cron entries into
 strictly lists of integers. It can also return a list of all timestamps in the
-next year a cron will run at.
+next year a cron will run.
 
