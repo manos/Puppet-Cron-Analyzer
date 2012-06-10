@@ -129,20 +129,22 @@ def find_dups_allhosts(all_crons, time_map):
     ''' the exact same cron running on various hosts (at the same times). returns dict {(host1, host2,): cron} '''
     pass
 
-def find_samestime_crons(crons, time_map):
+def find_sametime_crons(crons, time_map):
     ''' any crons that *ever* run at the same time on a host. returns list of full (puppet) crons. '''
     pass
 
-def find_sameschedule_crons(crons, time_map):
+def find_sameschedule_crons(crons):
     ''' crons that run at the same schedule on a host. returns list of full (puppet) crons. '''
 
-    # doesn't work, sees itself:
-    print [k for k,v in crons.iteritems() if k[:5] in [k[:5] for k,v in crons.iteritems()] ]
+    # ok, I better document this fucker.
+    #
+    # the nested comprehension just returns the time part of the key, for comparison (but skips if its
+    #  full key matches the outer loop's full key)
+    # loops over all crons, and compares the time part of the key (0,*,*,*,*),
+    #  to all other keys (skipping itself).. then returns list of values (puppet cron json) that match.
 
-    for cron in crons.iteritems():
-        pass
-    #output = map(list, [k for k in crons])
-    #print [k[:5] for k in output]
+    return [v for k,v in crons.iteritems() if k[:5] in [i[:5] for i,j in crons.iteritems() if i != k ] ]
+
 
 if __name__ == '__main__':
 
@@ -263,12 +265,26 @@ if __name__ == '__main__':
     ''' full analysis '''
 
     # find any crons that run on the exact same schedule on a host:
+    found_hosts = []
+    found_sum   = 0
     for host in all_data.iteritems():
-        find_sameschedule_crons(host[1])
+        results = []
+        found_crons = find_sameschedule_crons(host[1])
+        found_sum += len(found_crons)
+
+        for cron in found_crons:
+            results.append(cronify(cron))
+        print "Found %i crons with the exact same run schedule on host %s: " % (len(found_crons), host[0])
+        print '\t', "\n\t".join(map(str, results))
+
+        found_hosts.append(host[0])
+
+    if len(found_hosts) >0:
+        print "\n\nSummary: found %i crons on the following %i hosts: \n%s" % (found_sum, len(found_hosts), '\n'.join(map(str, found_hosts)))
 
     # find any crons that ever run at the same time, on the same host:
     for host in all_data.iteritems():
-        find_sametime_crons(host[1])
+        find_sametime_crons(host[1], time_map)
 
 
 #    hourly = [r for r in live_crons
