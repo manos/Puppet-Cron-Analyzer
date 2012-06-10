@@ -302,14 +302,14 @@ def expand_weekday (day):
 
 
 def expand_timestamps (normalized_cron_entry):
-    ''' returns a list containing all timestamps a cron will run at, for the next year '''
+    ''' returns a list containing all timestamps a cron will run at, for the current year '''
     if not isinstance(normalized_cron_entry, collections.Iterable):
         return []
 
     minutes, hours, monthdays, months, weekdays, command = normalized_cron_entry
 
     result = []
-    dt  = datetime.datetime.now()
+    dt  = datetime.datetime(datetime.datetime.now().year, 1, 1, 0, 0, 0, 0)
     end = dt + datetime.timedelta(days=365)
 
     step  = datetime.timedelta(minutes=1)
@@ -389,8 +389,8 @@ def test():
         "0-60/10 */2 * 12 1 mycommand... ...",
         '0-5,5-24/5,2 * 1 1 * nobody really does this',
     )
-    expected_timestamps = (12, 8760, 525600, 289080, 1248, 0, 120, 0,
-                           52195, 44, 1404, 216 )
+    expected_timestamps = (12, 8760, 525600, 289080, 1248, 0, 108, 0,
+                           52195, 55, 1404, 216 )
 
     for line in cronlines:
         print "testing: ", line
