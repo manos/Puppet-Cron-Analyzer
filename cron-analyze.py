@@ -22,7 +22,7 @@
 # Future: Options for displaying {day,week}-at-a-time views of all crons that will run.
 #
 '''
-usage: cron-analyze.py [options] [input file]
+usage: cron-analyze.py [options] [stdin] [input file]
 
 options:
   -h, --help            show this help message and exit
@@ -32,7 +32,7 @@ options:
                         output/
   -f regex, --find=regex
                         finds a cron across all hosts by regex (searches
-                        command field) - use python 're' compa
+                        command field) - use any python 're' compatible regex
 '''
 
 import sys
