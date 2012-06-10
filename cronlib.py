@@ -22,20 +22,14 @@ print cronlib.normalize_entry(cron)
 
  ('0,10,20,30,40,50', '0', '0', '0', '0', 'my awesome command, is awesome')
 
+# to get epoch timestamps for all times it will run at, for the next year:
+
+print cronlib.expand_timestamps(cronlib.normalize_entry(cron))
+
+# it understands all cron syntax, e.g., try these:
 cron = "0-60/10 */2 0 0 0 mycommand... ..."
-print cronlib.normalize_entry(cron)
-
- ('0,10,20,30,40,50,60', '0,2,4,6,8,10,12,14,16,18,20,22', '0', '0', '0', 'mycommand... ...')
-
 cron = "0-60/10 0 0 0 Mon,Tue command..."
-print cronlib.normalize_entry(cron)
-
- ('0,10,20,30,40,50,60', '0', '0', '0', '1,2', 'command...')
-
 cron = "@monthly my monthly command....."
-print cronlib.normalize_entry(cron)
-
- ('0', '0', '1', '1,2,3,4,5,6,7,8,9,10,11,12', '0,1,2,3,4,5,6', 'my monthly command.....')
 
 '''
 
@@ -308,14 +302,9 @@ def expand_weekday (day):
 
 
 def expand_timestamps (normalized_cron_entry):
-    ''' returns a generator object, containing a list of all timestamps a cron
-        will run at, for the next year '''
-
-    # input: ('0', '0', '1', '1,2,3,4,5,6,7,8,9,10,11,12', '0,1,2,3,4,5,6', 'monthly command.....')
-    #        ('0,10,20,30,40,50,60', '0', '0', '0', '1,2', 'command...')
-    # ('0', '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23',
-    #  '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31',
-    #  '1,2,3,4,5,6,7,8,9,10,11,12', '0,1,2,3,4,5,6', 'command')
+    ''' returns a list containing all timestamps a cron will run at, for the next year '''
+    if not isinstance(normalized_cron_entry, collections.Iterable):
+        return []
 
     minutes, hours, monthdays, months, weekdays, command = normalized_cron_entry
 
@@ -328,17 +317,15 @@ def expand_timestamps (normalized_cron_entry):
     while dt < end:
         if ( str(dt.minute) in minutes
              and str(dt.hour) in hours
-             and str(dt.weekday()) in weekdays
+             and str(dt.isoweekday()-1) in weekdays
              and str(dt.month) in months
              and str(dt.day) in monthdays
              ):
             #result.append(dt.strftime('%Y-%m-%d %H:%M:%S'))
-            #result.append(dt.strftime('%u'))
             result.append(time.mktime(dt.timetuple()))
         dt += step
 
-    print len(result)
-
+    return result
 
 
 def normalize_entry (cron_entry):
@@ -347,14 +334,11 @@ def normalize_entry (cron_entry):
         sent to expand_timestamps to get a list of all times it runs, for the next
         year. '''
 
-    # ignore (return False?) if @reboot is used.
-    # input: 0 * * * * command with spaces
-
     cron = cron_entry.split()
 
     if '@' in cron[0]:
         # @reboot isn't periodic, it's special. We can't deal with that.
-        if cron[0].lower() in '@reboot': return False
+        if cron[0].lower() in '@reboot': return None
 
         new = symbolic_names[cron[0]].split()
         new.append(' '.join(cron[1:]))
@@ -373,49 +357,56 @@ def normalize_entry (cron_entry):
     return entry
 
 
+def test():
+
+    c1 = '1-2'
+    c2 = '2,8'
+    c3 = '*'
+    c4 = '0-4,6'
+    c5 = '*/2'
+    c6 = '0-30/5'
+    c7 = '@midnight'
+    c8 = '@weekly'
+    c9 = '*/5'
+    c10 = 'Mon,Tue'
+    c11 = 'Jan,Feb,Dec'
+    c12 = '0-5,5-24/5,2'
+    c13 = '1-6/2,12'
+
+
+    # print cronlib.expand_dayweek(c10)
+    cronlines = (
+        "@monthly  monthly command.....",
+        "0 * * * * hourly command",
+        "* * * * * minute command",
+        "*/2 * * * * every 2 minute command",
+        "0-60/10 0 * * Mon,Tue weird command...",
+        "@reboot my awesome command.....",
+        "0-60/10 0 * 1 Mon,Tue command...",
+        "0-60/10 0 0 0 Mon,Tue command...",
+        "*/10 */2 * * * bash -c 'my command, is awesome'",
+        "*/10 0 * 1 0 my awesome command, is awesome",
+        "0-60/10 */2 * 12 1 mycommand... ...",
+        '0-5,5-24/5,2 * 1 1 * nobody really does this',
+    )
+    expected_timestamps = (12, 8760, 525600, 289080, 1248, 0, 120, 0,
+                           52195, 44, 1404, 216 )
+
+    for line in cronlines:
+        print "testing: ", line
+        print normalize_entry(line)
+
+
+    for line,length in map(None, cronlines, expected_timestamps):
+        print "testing: '%s' , expecting %s timestamps.." % (line, length)
+        result = expand_timestamps(normalize_entry(line))
+
+        if len(result) == length:
+            print "success!"
+        else:
+            print "ERR: got %s timestamps, but expected %s " % (len(result), length)
+            return False
+
 if __name__ == '__main__':
     test()
 
-'''
-Mr. Vixie says:
-
-              field          allowed values
-              -----          --------------
-              minute         0-59
-              hour           0-23
-              day of month   1-31
-              month          1-12 (or names, see below)
-              day of week    0-7 (0 or 7 is Sun, or use names)
-
-       A field may be an asterisk (*), which always stands for ''first-last''.
-
-       Ranges  of  numbers  are  allowed.  Ranges are two numbers separated with a hyphen.  The specified range is inclusive.  For example, 8-11 for an ''hours'' entry
-       specifies execution at hours 8, 9, 10 and 11.
-
-       Lists are allowed.  A list is a set of numbers (or ranges) separated by commas.  Examples: ''1,2,5,9'', ''0-4,8-12''.
-
-       Step values can be used in conjunction with ranges.  Following a range with ''/<number>'' specifies skips of the number's value through the range.  For example,
-       ''0-23/2''   can   be   used   in   the   hours   field   to   specify   command   execution   every   other  hour  (the  alternative  in  the  V7  standard  is
-       ''0,2,4,6,8,10,12,14,16,18,20,22'').  Steps are also permitted after an asterisk, so if you want to say ''every two hours'', just use ''*/2''.
-
-       Names can also be used for the ''month'' and ''day of week'' fields.  Use the first three letters of the particular day or month (case doesn't matter).   Ranges
-       or lists of names are not allowed.
-
-       Note: The day of a command's execution can be specified by two fields — day of month, and day of week.  If both fields are restricted (i.e., aren't *), the com-
-       mand will be run when either field matches the current time.  For example,
-       ''30 4 1,15 * 5'' would cause a command to be run at 4:30 am on the 1st and 15th of each month, plus every Friday.
-
-       Instead of the first five fields, one of eight special strings may appear:
-
-              string         meaning
-              ------         -------
-              @reboot        Run once, at startup.
-              @yearly        Run once a year, "0 0 1 1 *".
-              @annually      (same as @yearly)
-              @monthly       Run once a month, "0 0 1 * *".
-              @weekly        Run once a week, "0 0 * * 0".
-              @daily         Run once a day, "0 0 * * *".
-              @midnight      (same as @daily)
-              @hourly        Run once an hour, "0 * * * *".
-
-'''
