@@ -39,7 +39,8 @@ You can now search across all crons with existing data (super fast):
 ./cron-analyze.py -e -f '.*'
 
 Or generate an ics file for visualization in calendar apps:
-./cron-analyze.py -e -i ical
+./cron-analyze.py -e -i ical -n 7
+ (view from beginning of current year. this gets insane.. use a small -n!)
 
 You can also manually run cron-analyze.py on specific host's files:
 ./cron-analyze.py ./analyze-output/hostname.fqdn

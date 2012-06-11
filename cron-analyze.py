@@ -39,8 +39,8 @@ Options:
                         (displays 5-minute events at the beginning of the
                         year, for 7 days, unless -n is used)
   -n NUM_DAYS, --num_days=NUM_DAYS
-                        number of days to generate timestamps for - defaults
-                        to 7 for ical output
+                        Number of days to generate timestamps for - defaults
+                        to 7 for ical output. Has no effect if used with -e.
   -e, --existing-data   skip the parse step, use existing data in ./analyze-
                         output/
   -f regex, --find=regex
@@ -63,7 +63,8 @@ parser = OptionParser("usage: %prog [options] [stdin] [input file]")
 parser.add_option("-d", "--debug", default=None, help="enable debug output")
 parser.add_option("-o", "--output", default=None,
         help="default: stdout text-based summary. Options: [ical] (displays 5-minute events at the beginning of the year, for 7 days, unless -n is used)")
-parser.add_option("-n", "--num_days", default=None, help="number of days to generate timestamps for - defaults to 7 for ical output")
+parser.add_option("-n", "--num_days", default=None,
+        help="Number of days to generate timestamps for - defaults to 7 for ical output. Has no effect if used with -e.")
 parser.add_option("-e", "--existing-data", default=None, action="store_true",
         help="skip the parse step, use existing data in ./analyze-output/")
 parser.add_option("-f", "--find", default=None, metavar="regex",
