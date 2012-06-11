@@ -22,6 +22,10 @@
 # Future: Options for displaying {day,week}-at-a-time views of all crons that will run.
 # Future: for a given pair of crons (regex?), find out if they ever run at the same time.
 #
+# Note: you can run this with -e (use existing data) to run much faster. You can also run one one file
+#  at a time, which is really useful for ical generation, because you probably only want some hosts'
+#  crons as ical events (it can get crazy real quick).
+#
 '''
 usage: cron-analyze.py [options] [stdin] [input file]
 
@@ -54,6 +58,11 @@ parser.add_option("-e", "--existing-data", default=None, action="store_true",
 parser.add_option("-f", "--find", default=None, metavar="regex",
         help="finds a cron across all hosts by regex (searches command field) - use any python 're' compatible regex")
 (options, args) = parser.parse_args()
+
+# conditional imports - things that may not exist on every system,
+#  and are only necessary if options are used:
+if options.output is 'ical':
+    import icalendar
 
 # set up logging
 if options.debug: log_level = logging.DEBUG
@@ -117,7 +126,7 @@ def find_cron(all_crons, regex):
         for cron in found_crons:
             results.append(cronify(cron))
         print "Found on host %s: " % host[0]
-        print '\t', "\n\t".join(map(str, results))
+        print '\t', "\n\t".join(map(str, sorted(results)))
 
         found_hosts.append(host[0])
     if len(found_hosts) >0:
@@ -131,6 +140,7 @@ def find_dups_allhosts(all_crons, time_map):
 
 def find_sametime_crons(crons, time_map):
     ''' any crons that *ever* run at the same time on a host. returns list of full (puppet) crons. '''
+    #return [v for k,v in cron.iteritems() if time_map[k[:5]] in
     pass
 
 def find_sameschedule_crons(crons):
@@ -219,7 +229,7 @@ if __name__ == '__main__':
                     time_map.update({norm_cron[:5]:timestamps})
 
                 if filename in output and norm_cron in output[filename]:
-                    logging.warn("Found duplicate cron job on host %s. Skipping: %s", (filename,_cron))
+                    logging.warn("Found duplicate cron job on host %s. Skipping all but one: \n\t%s" % (filename, _cron))
 
                 if not filename in output:
                     output.update({filename:{norm_cron:cron}})
@@ -263,8 +273,9 @@ if __name__ == '__main__':
         pass
 
     ''' full analysis '''
-
+    #
     # find any crons that run on the exact same schedule on a host:
+    #
     found_hosts = []
     found_sum   = 0
     for host in all_data.iteritems():
@@ -274,17 +285,25 @@ if __name__ == '__main__':
 
         for cron in found_crons:
             results.append(cronify(cron))
-        print "Found %i crons with the exact same run schedule on host %s: " % (len(found_crons), host[0])
-        print '\t', "\n\t".join(map(str, results))
+
+        print "Found %i crons (in total), where some have the exact same run schedule on host %s: " % (len(found_crons), host[0])
+        print '\t', "\n\t".join(map(str, sorted(results)))
 
         found_hosts.append(host[0])
 
     if len(found_hosts) >0:
         print "\n\nSummary: found %i crons on the following %i hosts: \n%s" % (found_sum, len(found_hosts), '\n'.join(map(str, found_hosts)))
 
+    #
     # find any crons that ever run at the same time, on the same host:
+    #
+    found_hosts = []
+    found_sum   = 0
     for host in all_data.iteritems():
         find_sametime_crons(host[1], time_map)
+
+        for cron in found_crons:
+            results.append(cronify(cron))
 
 
 #    hourly = [r for r in live_crons
