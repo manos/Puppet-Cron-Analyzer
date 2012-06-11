@@ -30,6 +30,22 @@ Are all multiple jobs that hit mysql or cassandra heavily, running at the same t
 Where can I better schedule some of these clashes?!
 Where are we running crons with the string 'foobar'?
 
+Running:
+./puppet.py (on master) to generate json blob of all puppet catalogs to catalogs/
+./cron-parse.py to parse all catalogs and create host-specific files in parse-output/
+./cron-analyze.py to run basic analysis
+
+You can now search across all crons with existing data (super fast):
+./cron-analyze.py -e -f '.*'
+
+Or generate an ics file for visualization in calendar apps:
+./cron-analyze.py -e -i ical
+
+You can also manually run cron-analyze.py on specific host's files:
+./cron-analyze.py ./analyze-output/hostname.fqdn
+
+See --help for the latest available options.
+
 Bonus:
 This required the implementation of cronlib, which normalizes cron entries into
 strictly lists of integers. It can also return a list of all timestamps in the
