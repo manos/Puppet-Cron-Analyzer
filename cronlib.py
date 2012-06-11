@@ -301,7 +301,7 @@ def expand_weekday (day):
     return result
 
 
-def expand_timestamps (normalized_cron_entry):
+def expand_timestamps (normalized_cron_entry, days=365):
     ''' returns a list containing all timestamps a cron will run at, for the current year '''
 
     if normalized_cron_entry is None:
@@ -311,7 +311,7 @@ def expand_timestamps (normalized_cron_entry):
 
     result = []
     dt  = datetime.datetime(datetime.datetime.now().year, 1, 1, 0, 0, 0, 0)
-    end = dt + datetime.timedelta(days=365)
+    end = dt + datetime.timedelta(days=days)
 
     step  = datetime.timedelta(minutes=1)
 

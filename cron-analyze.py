@@ -1,3 +1,4 @@
+#!/opt/local/bin/python2.7
 #!/opt/local/bin/python2.4
 #!/usr/bin/env python
 #
@@ -27,12 +28,19 @@
 #  crons as ical events (it can get crazy real quick).
 #
 '''
-usage: cron-analyze.py [options] [stdin] [input file]
+Usage: cron-analyze.py [options] [stdin] [input file]
 
-options:
+Options:
   -h, --help            show this help message and exit
-  --debug=DEBUG         enable debug output
-  --output=OUTPUT       Default: stdout text-based summary. Options: [ical]
+  -d DEBUG, --debug=DEBUG
+                        enable debug output
+  -o OUTPUT, --output=OUTPUT
+                        default: stdout text-based summary. Options: [ical]
+                        (displays 5-minute events at the beginning of the
+                        year, for 7 days, unless -n is used)
+  -n NUM_DAYS, --num_days=NUM_DAYS
+                        number of days to generate timestamps for - defaults
+                        to 7 for ical output
   -e, --existing-data   skip the parse step, use existing data in ./analyze-
                         output/
   -f regex, --find=regex
@@ -43,6 +51,7 @@ options:
 import sys
 import os
 import re
+from datetime import datetime
 import subprocess
 import logging
 import simplejson as json
@@ -52,7 +61,9 @@ import cPickle as pickle
 
 parser = OptionParser("usage: %prog [options] [stdin] [input file]")
 parser.add_option("-d", "--debug", default=None, help="enable debug output")
-parser.add_option("-i", "--output", default=None, help="Default: stdout text-based summary. Options: [ical]")
+parser.add_option("-o", "--output", default=None,
+        help="default: stdout text-based summary. Options: [ical] (displays 5-minute events at the beginning of the year, for 7 days, unless -n is used)")
+parser.add_option("-n", "--num_days", default=None, help="number of days to generate timestamps for - defaults to 7 for ical output")
 parser.add_option("-e", "--existing-data", default=None, action="store_true",
         help="skip the parse step, use existing data in ./analyze-output/")
 parser.add_option("-f", "--find", default=None, metavar="regex",
@@ -61,8 +72,8 @@ parser.add_option("-f", "--find", default=None, metavar="regex",
 
 # conditional imports - things that may not exist on every system,
 #  and are only necessary if options are used:
-if options.output is 'ical':
-    import icalendar
+if options.output and 'ical' in options.output:
+    from icalendar import Calendar, Event
 
 # set up logging
 if options.debug: log_level = logging.DEBUG
@@ -140,6 +151,7 @@ def find_dups_allhosts(all_crons, time_map):
 
 def find_sametime_crons(crons, time_map):
     ''' any crons that *ever* run at the same time on a host. returns list of full (puppet) crons. '''
+    #TODO
     #return [v for k,v in cron.iteritems() if time_map[k[:5]] in
     pass
 
@@ -216,6 +228,12 @@ if __name__ == '__main__':
             time_map = {}
             # time_map: {"(0, 0, 1, 1, 0)": [98742323423.0, 29482039423.0, ... ]}
 
+            if not options.num_days and (options.output and 'ical' in options.output):
+                days = 7
+            elif not options.num_days:
+                days = 365
+            else: days = int(options.num_days)
+
             for cron in live_crons:
                 _cron = cronify(cron)
 
@@ -225,7 +243,7 @@ if __name__ == '__main__':
                 norm_cron = cronlib.normalize_entry(_cron)
 
                 if norm_cron and norm_cron[:5] not in time_map:
-                    timestamps = cronlib.expand_timestamps(norm_cron)
+                    timestamps = cronlib.expand_timestamps(norm_cron, days=days)
                     time_map.update({norm_cron[:5]:timestamps})
 
                 if filename in output and norm_cron in output[filename]:
@@ -268,9 +286,32 @@ if __name__ == '__main__':
         find_cron(all_data, options.find)
         sys.exit(0)
 
+    #
     # if we're outting a data format, do it and exit:
-    if options.output and options.output is 'ical':
-        pass
+    #
+    # ical output
+    if options.output and 'ical' in options.output :
+        cal = Calendar()
+        cal.add('prodid', '-//Cron calendar//mxm.dk//')
+        cal.add('version', '2.0')
+
+        for host in all_data.iteritems():
+            for cron in host[1]:
+                for timestamp in time_map[cron[:5]]:
+                    event = Event()
+                    event.add('summary', "%s: %s" % (host[0], cron[5:]))
+                    event.add('dtstart', datetime.fromtimestamp(timestamp))
+                    event.add('dtend',   datetime.fromtimestamp(timestamp+300))
+                    #event.add('dtstamp', datetime.fromtimestamp(timestamp,tzinfo=UTC))
+                    #event['uid'] = '20050115T101010/27346262376@mxm.dk'
+                    #event.add('priority', 1)
+
+                    cal.add_component(event)
+
+        f = open('crons.ics', 'wb')
+        f.write(cal.to_ical())
+        f.close()
+        sys.exit(0)
 
     ''' full analysis '''
     #

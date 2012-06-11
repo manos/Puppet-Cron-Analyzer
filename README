@@ -3,10 +3,10 @@
     What works:
         Parsing/storage of puppet catalogs / crons.
         Regex search of all crons.
+        Output to ics (iCal).
 
     TODO:
         Analysis of cron clashes, etc.
-        Output to ics (iCal).
         Graphical output per day/week.
 
 /!\
@@ -30,9 +30,12 @@ Are all multiple jobs that hit mysql or cassandra heavily, running at the same t
 Where can I better schedule some of these clashes?!
 Where are we running crons with the string 'foobar'?
 
-
 Bonus:
 This required the implementation of cronlib, which normalizes cron entries into
 strictly lists of integers. It can also return a list of all timestamps in the
 next year a cron will run.
+
+Requires:
+Python 2.7
+icalendar module
 
