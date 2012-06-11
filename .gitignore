@@ -1,4 +1,6 @@
 catalogs/
 parse-output/
 analyze-output/
+crons.ics
 *.pyc
+*.swp
