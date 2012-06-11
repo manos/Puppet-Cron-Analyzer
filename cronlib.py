@@ -82,8 +82,8 @@ def _exp_human_name (item):
         integer. Returns original string if it can't be translated.
         Ranges/steps are not valid for symbolic names, thankfully. '''
 
-    if item[0] not in chars:
-        return item
+    if not isinstance(item, str): return item
+    if item[0] not in chars: return item
 
     entry = item.lower()[:3]
 

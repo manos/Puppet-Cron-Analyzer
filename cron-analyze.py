@@ -60,7 +60,7 @@ import cronlib
 import cPickle as pickle
 
 parser = OptionParser("usage: %prog [options] [stdin] [input file]")
-parser.add_option("-d", "--debug", default=None, help="enable debug output")
+parser.add_option("-d", "--debug", default=None, action="store_true", help="enable debug output")
 parser.add_option("-o", "--output", default=None,
         help="default: stdout text-based summary. Options: [ical] (displays 5-minute events at the beginning of the year, for 7 days, unless -n is used)")
 parser.add_option("-n", "--num_days", default=None,
@@ -89,27 +89,42 @@ def cronify(cron):
     line = ""
     params = cron['parameters']
     if 'minute' in params:
-        line += params['minute'] + ' '
+        if isinstance(params['minute'], list):
+            minute = ','.join(map(str, params['minute']))
+        else: minute = params['minute']
+        line += minute + ' '
     else:
         line += '* '
 
     if 'hour' in params:
-        line += params['hour'] + ' '
+        if isinstance(params['hour'], list):
+            hour = ','.join(map(str, params['hour']))
+        else: hour = params['hour']
+        line += hour + ' '
     else:
         line += '* '
 
     if 'monthday' in params:
-        line += params['monthday'] + ' '
+        if isinstance(params['monthday'], list):
+            monthday = ','.join(map(str, params['monthday']))
+        else: monthday = params['monthday']
+        line += monthday + ' '
     else:
         line += '* '
 
     if 'month' in params:
-        line += params['month'] + ' '
+        if isinstance(params['month'], list):
+            month = ','.join(map(str, params['month']))
+        else: month = params['month']
+        line += month + ' '
     else:
         line += '* '
 
     if 'weekday' in params:
-        line += params['weekday'] + ' '
+        if isinstance(params['weekday'], list):
+            weekday = ','.join(map(str, params['weekday']))
+        else: weekday = params['weekday']
+        line += weekday + ' '
     else:
         line += '* '
 
@@ -236,6 +251,7 @@ if __name__ == '__main__':
             else: days = int(options.num_days)
 
             for cron in live_crons:
+                if options.debug: logging.debug("processing host: %s and cron: %s" % (filename, cron))
                 _cron = cronify(cron)
 
                 if _cron is None:
