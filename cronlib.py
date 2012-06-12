@@ -88,9 +88,9 @@ def _exp_human_name (item):
     entry = item.lower()[:3]
 
     if entry in days_map:
-        return days_map[entry]
+        return [days_map[entry]]
     elif entry in months_map:
-        return months_map[entry]
+        return [months_map[entry]]
     else:
         return item
 
