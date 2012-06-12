@@ -8,7 +8,7 @@
 # It runs 'puppet master --compile' on each, so this must be run on the puppet master,
 # with sudo privs for running the puppet cert and master commands.
 # This can take a long time! (TODO: parallel compilation?)
-
+# TODO: support --puppetmaster
 import sys
 import os
 import subprocess

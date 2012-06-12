@@ -27,6 +27,8 @@
 #  at a time, which is really useful for ical generation, because you probably only want some hosts'
 #  crons as ical events (it can get crazy real quick).
 #
+# TODO: --host (certname) to operate on one host (or a glob)
+# TODO: display which user the cron will run as!
 '''
 Usage: cron-analyze.py [options] [stdin] [input file]
 
