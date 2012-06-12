@@ -31,23 +31,9 @@
 # TODO: display which user the cron will run as!
 '''
 Usage: cron-analyze.py [options] [stdin] [input file]
+Use -e if you've already processed data once!
 
-Options:
-  -h, --help            show this help message and exit
-  -d DEBUG, --debug=DEBUG
-                        enable debug output
-  -o OUTPUT, --output=OUTPUT
-                        default: stdout text-based summary. Options: [ical]
-                        (displays 5-minute events at the beginning of the
-                        year, for 7 days, unless -n is used)
-  -n NUM_DAYS, --num_days=NUM_DAYS
-                        Number of days to generate timestamps for - defaults
-                        to 7 for ical output. Has no effect if used with -e.
-  -e, --existing-data   skip the parse step, use existing data in ./analyze-
-                        output/
-  -f regex, --find=regex
-                        finds a cron across all hosts by regex (searches
-                        command field) - use any python 're' compatible regex
+./cron-analyze.py --help
 '''
 
 import sys
@@ -69,7 +55,7 @@ parser.add_option("-n", "--num_days", default=None,
         help="Number of days to generate timestamps for - defaults to 7 for ical output. Has no effect if used with -e.")
 parser.add_option("-e", "--existing-data", default=None, action="store_true",
         help="skip the parse step, use existing data in ./analyze-output/")
-parser.add_option("-f", "--find", default=None, metavar="regex",
+parser.add_option("-r", "-f", "--find", default=None, metavar="regex",
         help="finds a cron across all hosts by regex (searches command field) - use any python 're' compatible regex")
 (options, args) = parser.parse_args()
 
@@ -352,7 +338,7 @@ if __name__ == '__main__':
         found_hosts.append(host[0])
 
     if len(found_hosts) >0:
-        print "\n\nSummary: found %i crons on the following %i hosts: \n%s" % (found_sum, len(found_hosts), '\n'.join(map(str, found_hosts)))
+        print "\n\nSummary: found %i clashing crons within the following %i hosts: \n%s" % (found_sum, len(found_hosts), '\n'.join(map(str, found_hosts)))
 
     #
     # find any crons that ever run at the same time, on the same host:
