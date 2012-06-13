@@ -29,6 +29,8 @@ Are all backups running at the same time?
 Are all multiple jobs that hit mysql or cassandra heavily, running at the same time?
 Where can I better schedule some of these clashes?!
 Where are we running crons with the string 'foobar'?
+What crons are running at 3am on this box (like, we see a graph showing high disk IO
+  and want to know if it's a cron).
 
 Running:
 ./puppet.py (on master) to generate json blob of all puppet catalogs to catalogs/
@@ -44,6 +46,9 @@ Or generate an ics file for visualization in calendar apps:
 
 You can also manually run cron-analyze.py on specific host's files:
 ./cron-analyze.py ./analyze-output/hostname.fqdn
+
+Display all crons on a specific host:
+./cron-analyze.py -f '.*' --host $PUPPET_CERTNAME
 
 See --help for the latest available options.
 

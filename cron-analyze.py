@@ -27,10 +27,9 @@
 #  at a time, which is really useful for ical generation, because you probably only want some hosts'
 #  crons as ical events (it can get crazy real quick).
 #
-# TODO: --host (certname) to operate on one host (or a glob)
 # TODO: display which user the cron will run as!
 '''
-Usage: cron-analyze.py [options] [stdin] [input file]
+Usage: cron-analyze.py [options] OR, to analyze one file: [stdin] [input file]
 Use -e if you've already processed data once!
 
 ./cron-analyze.py --help
@@ -47,8 +46,9 @@ from optparse import OptionParser
 import cronlib
 import cPickle as pickle
 
-parser = OptionParser("usage: %prog [options] [stdin] [input file]")
+parser = OptionParser("usage: %prog [options] OR, to analyze one file: [stdin] [input file]")
 parser.add_option("-d", "--debug", default=None, action="store_true", help="enable debug output")
+parser.add_option("--host", default=None, help="limit all actions to a specific host (puppet certname)")
 parser.add_option("-o", "--output", default=None,
         help="default: stdout text-based summary. Options: [ical] (displays 5-minute events at the beginning of the year, for 7 days, unless -n is used)")
 parser.add_option("-n", "--num_days", default=None,
@@ -130,6 +130,8 @@ def find_cron(all_crons, regex):
     found_hosts = []
     found_sum   = 0
     for host in all_crons.iteritems():
+        if options.host and host[0] not in options.host:
+            continue
 
         found_crons = [v for k,v in host[1].iteritems() if re.match(regex, k[5]) ]
 
@@ -209,6 +211,8 @@ if __name__ == '__main__':
     if not options.existing_data:
         all_data = {}
         for filename,crons in catalogs.iteritems():
+            if options.host and filename not in options.host:
+                continue
 
             # create a list crons that actually run (i.e. skips ensure=>absent)
             live_crons = []
@@ -279,6 +283,8 @@ if __name__ == '__main__':
         all_data = {}
         indir = outdir
         for host in os.listdir(indir):
+            if options.host and host not in options.host:
+                continue
             if host != 'time_map.pickle':
                 data = pickle.load(open(indir + host, 'r'))
                 all_data.update(data)
@@ -301,6 +307,8 @@ if __name__ == '__main__':
         cal.add('version', '2.0')
 
         for host in all_data.iteritems():
+            if options.host and host not in options.host:
+                continue
             for cron in host[1]:
                 for timestamp in time_map[cron[:5]]:
                     event = Event()
@@ -318,6 +326,7 @@ if __name__ == '__main__':
         f.close()
         sys.exit(0)
 
+
     ''' full analysis '''
     #
     # find any crons that run on the exact same schedule on a host:
@@ -325,6 +334,8 @@ if __name__ == '__main__':
     found_hosts = []
     found_sum   = 0
     for host in all_data.iteritems():
+        if options.host and host[0] not in options.host:
+            continue
         results = []
         found_crons = find_sameschedule_crons(host[1])
         found_sum += len(found_crons)
@@ -346,6 +357,8 @@ if __name__ == '__main__':
     found_hosts = []
     found_sum   = 0
     for host in all_data.iteritems():
+        if options.host and host[0] not in options.host:
+            continue
         find_sametime_crons(host[1], time_map)
 
         for cron in found_crons:
