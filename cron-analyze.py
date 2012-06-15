@@ -23,9 +23,7 @@
 # Future: Options for displaying {day,week}-at-a-time views of all crons that will run.
 # Future: for a given pair of crons (regex?), find out if they ever run at the same time.
 #
-# Note: you can run this with -e (use existing data) to run much faster. You can also run one one file
-#  at a time, which is really useful for ical generation, because you probably only want some hosts'
-#  crons as ical events (it can get crazy real quick).
+# Note: you can run this with -e (use existing data) to run much faster, after the first time.
 #
 # TODO: display which user the cron will run as!
 '''
@@ -72,8 +70,8 @@ logging.basicConfig(stream=sys.stdout, level=log_level)
 logging.basicConfig(stream=sys.stderr, level=(logging.ERROR,logging.CRITICAL))
 
 
-# convert json puppet config back to actual cron entry line that'd appear on-disk
 def cronify(cron):
+    ''' convert json puppet config back to actual cron entry line that'd appear on-disk '''
     line = ""
     params = cron['parameters']
     if 'minute' in params:

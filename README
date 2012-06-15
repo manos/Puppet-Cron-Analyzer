@@ -40,15 +40,15 @@ Running:
 You can now search across all crons with existing data (super fast):
 ./cron-analyze.py -e -f '.*'
 
+Display all crons on a specific host:
+./cron-analyze.py -e -f '.*' --host $PUPPET_CERTNAME
+
 Or generate an ics file for visualization in calendar apps:
 ./cron-analyze.py -e -i ical -n 7
  (view from beginning of current year. this gets insane.. use a small -n!)
 
-You can also manually run cron-analyze.py on specific host's files:
+You can also manually run cron-analyze.py on specific host's file:
 ./cron-analyze.py ./analyze-output/hostname.fqdn
-
-Display all crons on a specific host:
-./cron-analyze.py -f '.*' --host $PUPPET_CERTNAME
 
 See --help for the latest available options.
 
